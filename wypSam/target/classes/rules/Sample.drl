@@ -1,0 +1,55 @@
+package com.sample
+ 
+import java.util.Date;
+
+import klient.Rezerwacja
+import klient.Zwrot
+
+import com.auto.Samochod
+ 
+
+rule "Zwieksz klase samochodu"
+	when
+		r : Rezerwacja( przyjeta == false && zakonczona == false && samochod.klasa < 2, myKlasa : samochod.klasa)
+		forall( s: Samochod(klasa == myKlasa)
+				Rezerwacja(samochod == s && przyjeta == true && (dateBetween(r.dataOd) == true || dateBetween(r.dataDo) == true)) )
+	then
+		r.samochod.klasa += 1;
+		System.out.println("Zwiekszenie klasy");
+		update(r);
+end
+
+rule "Rezerwuj Samochod"
+	when
+		r : Rezerwacja( przyjeta == false && zakonczona == false, myKlasa : samochod.klasa)
+		s : Samochod(klasa == myKlasa)
+	not Rezerwacja(samochod == s && przyjeta == true && (dateBetween(r.dataOd) == true || dateBetween(r.dataDo) == true)) 
+	not Rezerwacja(klient == r.klient && przyjeta == true && zakonczona == false)
+	then
+	r.przyjeta = true;
+	r.cenaOd3 = r.samochod.cenaOd3;
+	r.cenaDo3 = r.samochod.cenaDo3;
+	r.samochod = s;
+	update(r);
+end
+
+rule "Zwrot Samochodu"
+	when
+		z : Zwrot(zwrocony == false)
+	then
+		double cena = z.rezerwacja.samochod.cenaZaSamochod(z);
+		System.out.println(z.rezerwacja.klient.name+ " " + z.rezerwacja.samochod.klasa +" "+cena);
+		z.zwrocony = true;
+		z.rezerwacja.zakonczona = true;
+		update(z);
+end
+
+rule "Usuwanie zlych rezerwacji"
+	when
+	r : Rezerwacja( przyjeta == false && zakonczona == false, myKlasa : samochod.klasa)
+	Rezerwacja(przyjeta == true && klient == r.klient && (dateBetween(r.dataOd) == true || dateBetween(r.dataDo) == true)) 
+	then
+	r.zakonczona = true;
+	System.out.println("Istnieje rezerwacja w tym terminie");
+	update(r);
+end
