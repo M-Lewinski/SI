@@ -7,7 +7,10 @@ import klient.Zwrot
 
 import com.auto.Samochod
  
-
+/**
+ * Regula sprawdza czy w danym terminie dla danej rezerwacji istnieje samochod w danej klasie
+ * Jezeli nie to zwiekszana jest klasa samochodu bez zwiekszania jego ceny
+*/
 rule "Zwieksz klase samochodu"
 	when
 		r : Rezerwacja( przyjeta == false && zakonczona == false && samochod.klasa < 2, myKlasa : samochod.klasa)
@@ -19,6 +22,11 @@ rule "Zwieksz klase samochodu"
 		update(r);
 end
 
+/**
+	* Regula sprawdza czy istnieje taka rezerwacja która nie zostala przyjeta oraz nie jest zakonczona.
+	* Nastepnie sprawdzamy czy istnieje samochód danej klasy w danym terminie.
+	* Oraz sprawdzamy czy klient nie ma innych przyjetych ale nie zakonczonych rezerwacji.
+*/
 rule "Rezerwuj Samochod"
 	when
 		r : Rezerwacja( przyjeta == false && zakonczona == false, myKlasa : samochod.klasa)
@@ -33,17 +41,24 @@ rule "Rezerwuj Samochod"
 	update(r);
 end
 
+/**
+	* Regula sprawdza czy istnieje jakis zwrot który nie zostal jeszcze podsumowany(zwrócony).
+*/
 rule "Zwrot Samochodu"
 	when
 		z : Zwrot(zwrocony == false)
 	then
 		double cena = z.rezerwacja.samochod.cenaZaSamochod(z);
-		System.out.println(z.rezerwacja.klient.name+ " " + z.rezerwacja.samochod.klasa +" "+cena);
+		System.out.println(z.rezerwacja.klient.name+ " " + z.rezerwacja.samochod.getClass().getSimpleName() +" "+cena);
 		z.zwrocony = true;
 		z.rezerwacja.zakonczona = true;
 		update(z);
 end
 
+/**
+	* Regula sprawdza czy istnieje klient który w danym okresie posiada rezerwacjé która zostala juz przyjeta.
+	* Rezerwacja ta zostaje oznaczona jako zakonczona, ale nie przyjeta.
+*/
 rule "Usuwanie zlych rezerwacji"
 	when
 	r : Rezerwacja( przyjeta == false && zakonczona == false, myKlasa : samochod.klasa)
